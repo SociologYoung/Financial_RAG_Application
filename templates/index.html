@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEC Finance RAG Assistant</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 20px 0;
+            text-align: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1em;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .ingest-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+
+        .input-group input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 15px 25px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(17, 153, 142, 0.4);
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            font-weight: 500;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .status-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .status-success {
+            background: linear-gradient(135deg, #d4edda, #c3e6cb);
+            color: #155724;
+            border-left: 4px solid #28a745;
+        }
+
+        .status-error {
+            background: linear-gradient(135deg, #f8d7da, #f5c6cb);
+            color: #721c24;
+            border-left: 4px solid #dc3545;
+        }
+
+        .status-info {
+            background: linear-gradient(135deg, #cce7ff, #b8daff);
+            color: #004085;
+            border-left: 4px solid #007bff;
+        }
+
+        .summary-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .summary-section.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .summary-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .summary-content {
+            line-height: 1.6;
+            color: #555;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .query-section {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .query-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #11998e;
+            padding-bottom: 10px;
+        }
+
+        .query-input {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .query-input input {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+        }
+
+        .query-input input:focus {
+            outline: none;
+            border-color: #11998e;
+            box-shadow: 0 0 0 3px rgba(17, 153, 142, 0.1);
+        }
+
+        .answer-section {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #11998e;
+            display: none;
+            line-height: 1.6;
+            color: #555;
+            white-space: pre-wrap;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .answer-section.show {
+            display: block;
+            animation: slideIn 0.5s ease;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .example-queries {
+            margin-top: 20px;
+            padding: 20px;
+            background: #e8f4f8;
+            border-radius: 10px;
+            border-left: 4px solid #17a2b8;
+        }
+
+        .example-queries h4 {
+            color: #0c5460;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+
+        .example-queries ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .example-queries li {
+            background: white;
+            margin: 8px 0;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid #bee5eb;
+        }
+
+        .example-queries li:hover {
+            background: #17a2b8;
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .help-section {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .help-section h4 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+
+        .help-section p {
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+
+        .supported-companies {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .company-tag {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            text-align: center;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .input-group, .query-input {
+                flex-direction: column;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .container {
+                margin: 20px auto;
+                padding: 0 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>SEC Finance RAG Assistant</h1>
+        <p>Ingest 10-K filings and ask questions about financial data</p>
+    </div>
+
+    <div class="container">
+        <div class="ingest-section">
+            <div class="input-group">
+                <input type="text" id="companyInput" placeholder="Enter company ticker (e.g., AAPL, MSFT, GOOGL)" />
+                <button class="btn btn-primary" onclick="ingestDocument()">
+                    <span id="ingestText">Ingest 10-K</span>
+                    <div id="ingestLoading" class="loading" style="display: none;"></div>
+                </button>
+            </div>
+            
+            <div id="statusMessage" class="status-message"></div>
+        </div>
+
+        <div id="summarySection" class="summary-section">
+            <h3>Document Summary</h3>
+            <div id="summaryContent" class="summary-content"></div>
+        </div>
+
+        <div class="query-section">
+            <h3>Ask Questions About Financial Data</h3>
+            <div class="query-input">
+                <input type="text" id="questionInput" placeholder="Ask a question about the financial data..." 
+                       onkeypress="handleKeyPress(event)" />
+                <button class="btn btn-secondary" onclick="askQuestion()">
+                    <span id="queryText">Send</span>
+                    <div id="queryLoading" class="loading" style="display: none;"></div>
+                </button>
+            </div>
+            
+            <div id="answerSection" class="answer-section"></div>
+            
+            <div class="example-queries">
+                <h4>💡 Example Questions:</h4>
+                <ul>
+                    <li onclick="setQuestion('What was the total revenue for the most recent fiscal year?')">
+                        What was the total revenue for the most recent fiscal year?
+                    </li>
+                    <li onclick="setQuestion('What are the main sources of revenue for this company?')">
+                        What are the main sources of revenue for this company?
+                    </li>
+                    <li onclick="setQuestion('What were the major expenses and their amounts?')">
+                        What were the major expenses and their amounts?
+                    </li>
+                    <li onclick="setQuestion('How did net income change compared to the previous year?')">
+                        How did net income change compared to the previous year?
+                    </li>
+                    <li onclick="setQuestion('What are the key risks mentioned in the filing?')">
+                        What are the key risks mentioned in the filing?
+                    </li>
+                    <li onclick="setQuestion('What is the company outlook for the upcoming year?')">
+                        What is the company's outlook for the upcoming year?
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="help-section">
+            <h4>📋 How to Use:</h4>
+            <p><strong>Step 1:</strong> Enter a company ticker symbol (like AAPL for Apple) and click "Ingest 10-K" to download and process their latest SEC filing.</p>
+            <p><strong>Step 2:</strong> Once processed, ask specific questions about the company's financial data, performance, risks, and outlook.</p>
+            <p><strong>Step 3:</strong> The AI will search through the document and provide detailed answers based on the actual filing content.</p>
+            
+            <h4>🏢 Supported Companies:</h4>
+            <div class="supported-companies">
+                <div class="company-tag">AAPL</div>
+                <div class="company-tag">MSFT</div>
+                <div class="company-tag">GOOGL</div>
+                <div class="company-tag">AMZN</div>
+                <div class="company-tag">TSLA</div>
+                <div class="company-tag">META</div>
+                <div class="company-tag">NVDA</div>
+                <div class="company-tag">JPM</div>
+                <div class="company-tag">JNJ</div>
+                <div class="company-tag">PG</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isIngesting = false;
+        let isQuerying = false;
+
+        function showStatus(message, type = 'info') {
+            const statusElement = document.getElementById('statusMessage');
+            statusElement.textContent = message;
+            statusElement.className = `status-message status-${type} show`;
+            
+            if (type === 'success' || type === 'error') {
+                setTimeout(() => {
+                    statusElement.classList.remove('show');
+                }, 5000);
+            }
+        }
+
+        function showSummary(summary) {
+            const summarySection = document.getElementById('summarySection');
+            const summaryContent = document.getElementById('summaryContent');
+            
+            summaryContent.textContent = summary;
+            summarySection.classList.add('show');
+        }
+
+        function showAnswer(question, answer) {
+            const answerSection = document.getElementById('answerSection');
+            answerSection.innerHTML = `<strong>Question:</strong> ${question}\n\n<strong>Answer:</strong> ${answer}`;
+            answerSection.classList.add('show');
+        }
+
+        async function ingestDocument() {
+            if (isIngesting) return;
+            
+            const companyInput = document.getElementById('companyInput');
+            const company = companyInput.value.trim();
+            
+            if (!company) {
+                showStatus('Please enter a company ticker symbol', 'error');
+                return;
+            }
+
+            isIngesting = true;
+            const ingestText = document.getElementById('ingestText');
+            const ingestLoading = document.getElementById('ingestLoading');
+            
+            ingestText.style.display = 'none';
+            ingestLoading.style.display = 'inline-block';
+            showStatus(`Ingesting 10-K for CIK/Company: ${company}...`, 'info');
+
+            try {
+                const response = await fetch('/api/ingest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        type: 'cik',
+                        value: company
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus(data.message, 'success');
+                    if (data.summary) {
+                        showSummary(data.summary);
+                    }
+                } else {
+                    showStatus(`Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Network error: ${error.message}`, 'error');
+                console.error('Error:', error);
+            } finally {
+                isIngesting = false;
+                ingestText.style.display = 'inline';
+                ingestLoading.style.display = 'none';
+            }
+        }
+
+        async function askQuestion() {
+            if (isQuerying) return;
+            
+            const questionInput = document.getElementById('questionInput');
+            const question = questionInput.value.trim();
+            
+            if (!question) {
+                showStatus('Please enter a question', 'error');
+                return;
+            }
+
+            isQuerying = true;
+            const queryText = document.getElementById('queryText');
+            const queryLoading = document.getElementById('queryLoading');
+            
+            queryText.style.display = 'none';
+            queryLoading.style.display = 'inline-block';
+
+            try {
+                const response = await fetch('/api/query', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        question: question
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showAnswer(question, data.answer);
+                    questionInput.value = '';
+                } else {
+                    showStatus(`Error: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                showStatus(`Network error: ${error.message}`, 'error');
+                console.error('Error:', error);
+            } finally {
+                isQuerying = false;
+                queryText.style.display = 'inline';
+                queryLoading.style.display = 'none';
+            }
+        }
+
+        function setQuestion(question) {
+            document.getElementById('questionInput').value = question;
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                askQuestion();
+            }
+        }
+
+        // Handle Enter key for company input
+        document.getElementById('companyInput').addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                ingestDocument();
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+Flask==2.3.3
+requests==2.31.0
+beautifulsoup4==4.12.2
+llama-index==0.10.57
+llama-index-llms-openai==0.1.22
+llama-index-embeddings-openai==0.1.10
+openai==1.35.13
+python-dotenv==1.0.0
+pathlib==1.0.1
+lxml==4.9.3
+html5lib==1.1
