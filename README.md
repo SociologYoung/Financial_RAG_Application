@@ -53,19 +53,38 @@ A powerful Retrieval-Augmented Generation (RAG) application that automatically d
    ```
 
 4. **Set up environment variables**
+   
+   Create a `.env` file in the project root:
    ```bash
-   # Create a .env file
-   echo "OPENAI_API_KEY=your_openai_api_key_here" > .env
+   # Copy the example file
+   cp env_example.sh .env
    ```
    
-   Or set the environment variable directly:
+   Then edit the `.env` file with your actual values:
    ```bash
-   # Windows
-   set OPENAI_API_KEY=your_openai_api_key_here
+   # OpenAI API Configuration
+   OPENAI_API_KEY=your_actual_openai_api_key_here
    
-   # macOS/Linux
-   export OPENAI_API_KEY=your_openai_api_key_here
+   # SEC API Configuration (Required by SEC.gov)
+   USER_EMAIL=your-actual-email@example.com
+   PROJECT_NAME=Your Actual Project Name
    ```
+
+### SEC API Configuration (Required)
+
+The SEC requires identification when accessing their API. You **must** update these values in your `.env` file:
+
+```bash
+# Required by SEC.gov for API access
+USER_EMAIL=your-actual-email@example.com
+PROJECT_NAME=Your Actual Project Name
+```
+
+**Important**: 
+- Replace `your-actual-email@example.com` with your real email address
+- Replace `Your Actual Project Name` with your actual project name
+- The SEC requires this information for all API requests and will reject requests with placeholder values
+
 
 ## 🎯 Usage
 
@@ -145,18 +164,20 @@ sec-finance-rag-assistant/
 │   └── company_folders/        # Processed documents
 ├── uploads/                    # Downloaded SEC filings (auto-created)
 ├── requirements.txt            # Python dependencies
-├── .env_example               # Environment variables template
-├── .gitignore                 # Git ignore rules
-├── README.md                  # This file
-
-
+├── env_example.sh              # Environment variables template
+├── .gitignore                  # Git ignore rules
+├── README.md                   # This file
+└── setup_script.py             # Package setup configuration
 ```
+
 
 ## 🔧 Configuration
 
 ### Environment Variables
 
 - `OPENAI_API_KEY`: Your OpenAI API key (required)
+- `USER_EMAIL`: Your email address (required by SEC.gov)
+- `PROJECT_NAME`: Your project name (required by SEC.gov)
 
 ### Customization
 
@@ -178,22 +199,28 @@ COMPANY_CIK_MAP = {
    - Make sure you've set the `OPENAI_API_KEY` environment variable
    - Check that your API key is valid and has sufficient credits
 
-2. **"No 10-K filing found"**
+2. **"SEC API request failed"**
+   - Verify you've set a real email address in `USER_EMAIL`
+   - Ensure `PROJECT_NAME` is set to an actual project name
+   - Check your internet connection
+
+3. **"No 10-K filing found"**
    - Verify the company ticker is correct
    - Some companies may not have recent 10-K filings
 
-3. **Slow processing**
+4. **Slow processing**
    - Large 10-K documents can take time to process
    - Check your internet connection for downloading files
 
-4. **Import errors**
+5. **Import errors**
    - Make sure you've installed all requirements: `pip install -r requirements.txt`
    - Verify you're using Python 3.8+
 
 ### Logging
 
-The application logs detailed information to `sec_rag.log`. Check this file for debugging information.
+The application logs detailed information to `logs/sec_rag.log`. Check this file for debugging information.
 
+## 🤝 Contributing
 
 ### Development Setup
 
@@ -203,7 +230,11 @@ The application logs detailed information to `sec_rag.log`. Check this file for 
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## Acknowledgments
+## 📄 License
+
+This project is licensed under the MIT License 
+
+## 🙏 Acknowledgments
 
 - [LlamaIndex](https://github.com/run-llama/llama_index) for the RAG framework
 - [OpenAI](https://openai.com/) for GPT-3.5 and embeddings
