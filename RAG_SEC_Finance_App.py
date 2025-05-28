@@ -64,7 +64,7 @@ WORK_DIR.mkdir(exist_ok=True)
 UPLOADS_DIR.mkdir(exist_ok=True)
 
 # Configure LLM and embeddings
-Settings.llm = OpenAI(model="gpt-3.5-turbo", temperature=0.1, api_key=OPENAI_API_KEY)
+Settings.llm = OpenAI(model="gpt-3.5-turbo", temperature=0.1, openai_api_key=OPENAI_API_KEY)
 Settings.embed_model = OpenAIEmbedding(api_key=OPENAI_API_KEY)
 
 # Company ticker to CIK mapping (expand as needed)
