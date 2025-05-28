@@ -5,9 +5,6 @@ A Flask-based application for analyzing SEC 10-K filings using RAG (Retrieval Au
 """
 
 import os
-# Create logs directory immediately - MOST ROBUST SOLUTION
-os.makedirs('logs', exist_ok=True)
-
 import json
 import logging
 import requests
@@ -32,18 +29,12 @@ from llama_index.llms.openai import OpenAI
 from dotenv import load_dotenv
 
 
-# Load environment variables
-load_dotenv()
-USER_EMAIL = os.getenv('USER_EMAIL', 'your-email@example.com')
-PROJECT_NAME = os.getenv('PROJECT_NAME', 'Your project name')
-
-# Configure logging (logs directory already created above)
-log_level = os.getenv('LOG_LEVEL', 'INFO')
+# Configure logging
 logging.basicConfig(
-    level=getattr(logging, log_level),
-    format='%(asctime)s %(levelname)s %(name)s %(message)s',
+    level=logging.INFO,
+    format='%(asctime)s %(levelname)s %(message)s',
     handlers=[
-        logging.FileHandler('logs/sec_rag.log'),
+        logging.FileHandler('sec_rag.log'),
         logging.StreamHandler()
     ]
 )
@@ -51,21 +42,26 @@ logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 
-# Configuration
+# Configuration - Environment Variables
 OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
-if not OPENAI_API_KEY:
-    logger.error("OPENAI_API_KEY environment variable is not set")
-    raise ValueError("Please set the OPENAI_API_KEY environment variable")
+PROJECT_NAME = os.getenv('PROJECT_NAME')
+USER_EMAIL = os.getenv('USER_EMAIL')
 
-# Directories
+# Validate required environment variables
+if not OPENAI_API_KEY:
+    raise ValueError("Please set the OPENAI_API_KEY environment variable")
+if not PROJECT_NAME:
+    raise ValueError("Please set the PROJECT_NAME environment variable")
+if not USER_EMAIL:
+    raise ValueError("Please set the USER_EMAIL environment variable")
+
 WORK_DIR = Path("work")
 UPLOADS_DIR = Path("uploads")
 INDEX_DIR = WORK_DIR / "index"
-LOGS_DIR = Path("logs")
 
 # Create directories
-for directory in [WORK_DIR, UPLOADS_DIR, INDEX_DIR, LOGS_DIR]:
-    directory.mkdir(exist_ok=True)
+WORK_DIR.mkdir(exist_ok=True)
+UPLOADS_DIR.mkdir(exist_ok=True)
 
 # Configure LLM and embeddings
 Settings.llm = OpenAI(model="gpt-3.5-turbo", temperature=0.1, api_key=OPENAI_API_KEY)
@@ -82,12 +78,7 @@ COMPANY_CIK_MAP = {
     'NVDA': '0001045810',
     'JPM': '0000019617',
     'JNJ': '0000200406',
-    'PG': '0000080424',
-    'BAC': '0000070858',
-    'XOM': '0000034088',
-    'WMT': '0000104169',
-    'CVX': '0000093410',
-    'UNH': '0000731766'
+    'PG': '0000080424'
 }
 
 class SECDataExtractor:
@@ -109,13 +100,9 @@ class SECDataExtractor:
         url = f"https://data.sec.gov/submissions/CIK{cik}.json"
         logger.info(f"Fetching submissions index from: {url}")
         
-        try:
-            response = self.session.get(url, timeout=30)
-            response.raise_for_status()
-            return response.json()
-        except requests.RequestException as e:
-            logger.error(f"Error fetching submissions: {e}")
-            raise
+        response = self.session.get(url)
+        response.raise_for_status()
+        return response.json()
     
     def find_latest_10k(self, submissions: Dict[str, Any]) -> Optional[Dict[str, str]]:
         """Find the latest 10-K filing"""
@@ -132,7 +119,6 @@ class SECDataExtractor:
                     'date': filing_dates[i],
                     'primary_doc': primary_documents[i]
                 }
-        logger.warning("No 10-K filing found")
         return None
     
     def download_10k_document(self, cik: str, accession: str, primary_doc: str) -> str:
@@ -145,44 +131,55 @@ class SECDataExtractor:
         
         # Update headers for SEC website
         headers = {
-            'User-Agent':  f'{PROJECT_NAME} {USER_EMAIL}',
+            'User-Agent': f'{PROJECT_NAME} {USER_EMAIL}',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
             'Accept-Encoding': 'gzip, deflate',
             'Connection': 'keep-alive',
         }
         
-        try:
-            response = requests.get(url, headers=headers, timeout=60)
-            response.raise_for_status()
-            
-            # Parse HTML and extract meaningful content
-            soup = BeautifulSoup(response.content, 'html.parser')
-            
-            # Remove script and style elements
-            for script in soup(["script", "style"]):
-                script.decompose()
-            
-            # Enhanced text extraction focusing on financial sections
-            text_content = self.extract_financial_sections(soup)
-            
-            # Save to file
-            filename = f"{cik}_10K_{accession}_{primary_doc.replace('.htm', '.txt')}"
-            filepath = UPLOADS_DIR / filename
-            
-            with open(filepath, 'w', encoding='utf-8') as f:
-                f.write(text_content)
-            
-            logger.info(f"Successfully downloaded and converted 10-K HTML to text: {filepath}")
-            return str(filepath)
-            
-        except requests.RequestException as e:
-            logger.error(f"Error downloading document: {e}")
-            raise
+        response = requests.get(url, headers=headers)
+        response.raise_for_status()
+        
+        # Parse HTML and extract meaningful content
+        soup = BeautifulSoup(response.content, 'html.parser')
+        
+        # Remove script and style elements
+        for script in soup(["script", "style"]):
+            script.decompose()
+        
+        # Enhanced text extraction focusing on financial sections
+        text_content = self.extract_financial_sections(soup)
+        
+        # Save to file
+        filename = f"{cik}_10K_{accession.split('-')[0]}-{accession.split('-')[1]}-{accession.split('-')[2]}_{primary_doc.replace('.htm', '.txt')}"
+        filepath = UPLOADS_DIR / filename
+        
+        with open(filepath, 'w', encoding='utf-8') as f:
+            f.write(text_content)
+        
+        logger.info(f"Successfully downloaded and converted 10-K HTML to text: {filepath}")
+        return str(filepath)
     
     def extract_financial_sections(self, soup: BeautifulSoup) -> str:
         """Enhanced extraction of financial sections from 10-K HTML"""
         sections = []
+        
+        # Look for common financial section patterns
+        financial_patterns = [
+            r'item\s*1a\.*\s*risk factors',
+            r'item\s*2\.*\s*properties',
+            r'item\s*3\.*\s*legal proceedings',
+            r'item\s*7\.*\s*management.*discussion.*analysis',
+            r'item\s*8\.*\s*financial statements',
+            r'consolidated statements',
+            r'consolidated balance sheet',
+            r'consolidated income statement',
+            r'consolidated statement.*operations',
+            r'consolidated statement.*cash flows',
+            r'consolidated statement.*equity',
+            r'notes to.*financial statements'
+        ]
         
         # Extract text from all elements
         all_text = soup.get_text()
@@ -258,29 +255,29 @@ class DocumentProcessor:
         """Generate summary of the document focusing on financial data"""
         logger.info(f"Summarizing Markdown file: {md_filepath}")
         
+        with open(md_filepath, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Truncate content if too large (keep first 8000 chars for summary)
+        if len(content) > 8000:
+            content = content[:8000] + "...[truncated]"
+        
+        prompt = f"""
+        Analyze this 10-K filing excerpt and provide a comprehensive summary focusing on:
+        
+        1. **Revenue**: Specific revenue figures, year-over-year changes, and revenue segments
+        2. **Net Income**: Profit/loss figures and trends
+        3. **Major Expenses or Cost Drivers**: Key expense categories and their amounts
+        4. **Significant Trends or Outlook Statements**: Forward-looking statements and business outlook
+        5. **Key Financial Metrics**: Any important ratios, margins, or financial indicators mentioned
+        
+        Content to analyze:
+        {content}
+        
+        Provide a detailed summary with actual numbers and financial data where available:
+        """
+        
         try:
-            with open(md_filepath, 'r', encoding='utf-8') as f:
-                content = f.read()
-            
-            # Truncate content if too large (keep first 8000 chars for summary)
-            if len(content) > 8000:
-                content = content[:8000] + "...[truncated]"
-            
-            prompt = f"""
-            Analyze this 10-K filing excerpt and provide a comprehensive summary focusing on:
-            
-            1. **Revenue**: Specific revenue figures, year-over-year changes, and revenue segments
-            2. **Net Income**: Profit/loss figures and trends
-            3. **Major Expenses or Cost Drivers**: Key expense categories and their amounts
-            4. **Significant Trends or Outlook Statements**: Forward-looking statements and business outlook
-            5. **Key Financial Metrics**: Any important ratios, margins, or financial indicators mentioned
-            
-            Content to analyze:
-            {content}
-            
-            Provide a detailed summary with actual numbers and financial data where available:
-            """
-            
             response = self.llm.complete(prompt)
             summary = str(response)
             
@@ -378,33 +375,22 @@ rag_system = RAGSystem()
 
 @app.route('/')
 def index():
-    """Main page"""
     return render_template('index.html')
-
-@app.route('/health')
-def health_check():
-    """Health check endpoint for Docker"""
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': datetime.now().isoformat(),
-        'version': '1.0.0'
-    })
 
 @app.route('/api/ingest', methods=['POST'])
 def ingest_document():
-    """Ingest SEC documents"""
     try:
         data = request.json
         ingest_type = data.get('type')
         value = data.get('value', '').strip()
         
-        logger.info(f"Received ingest request: type='{ingest_type}', value='{value[:20]}...'")
+        logger.info(f"Received ingest request: type='{ingest_type}', value='{value}...'")
         
         if ingest_type == 'cik':
             # Check if it's a ticker symbol first
             cik = sec_extractor.get_cik_from_ticker(value)
             if cik:
-                logger.info(f"Recognized ticker '{value}', using CIK: {cik}")
+                logger.info(f"Recognized company name '{value}', using CIK: {cik}")
             else:
                 # Assume it's already a CIK
                 cik = value.zfill(10)  # Pad with zeros to 10 digits
@@ -418,7 +404,7 @@ def ingest_document():
             if not latest_10k:
                 return jsonify({'error': 'No 10-K filing found for this company'}), 404
             
-            logger.info(f"Found 10-K: Accession '{latest_10k['accession']}', Date '{latest_10k['date']}'")
+            logger.info(f"Found 10-K: Accession '{latest_10k['accession']}', Date '{latest_10k['date']}', PrimaryDoc '{latest_10k['primary_doc']}'")
             
             # Download the document
             filepath = sec_extractor.download_10k_document(
@@ -465,8 +451,7 @@ def ingest_document():
         return jsonify({
             'message': '✅ 10-K successfully ingested!',
             'summary': summary,
-            'filename': Path(filepath).name,
-            'filing_date': latest_10k['date'] if ingest_type == 'cik' else None
+            'filename': Path(filepath).name
         })
         
     except Exception as e:
@@ -475,7 +460,6 @@ def ingest_document():
 
 @app.route('/api/query', methods=['POST'])
 def query_documents():
-    """Query the RAG system"""
     try:
         data = request.json
         question = data.get('question', '').strip()
@@ -483,7 +467,7 @@ def query_documents():
         if not question:
             return jsonify({'error': 'Question cannot be empty'}), 400
         
-        logger.info(f"Received query: {question[:100]}...")
+        logger.info(f"Received query: {question}")
         
         # Query the RAG system
         answer = rag_system.query(question)
@@ -492,27 +476,12 @@ def query_documents():
         
         return jsonify({
             'answer': answer,
-            'question': question,
-            'timestamp': datetime.now().isoformat()
+            'question': question
         })
         
     except Exception as e:
         logger.error(f"Error during query: {e}")
         return jsonify({'error': str(e)}), 500
 
-@app.errorhandler(404)
-def not_found(error):
-    return jsonify({'error': 'Endpoint not found'}), 404
-
-@app.errorhandler(500)
-def internal_error(error):
-    logger.error(f"Internal server error: {error}")
-    return jsonify({'error': 'Internal server error'}), 500
-
 if __name__ == '__main__':
-    port = int(os.getenv('APP_PORT', 8000))
-    host = os.getenv('APP_HOST', '0.0.0.0')
-    debug = os.getenv('FLASK_DEBUG', 'False').lower() == 'true'
-    
-    logger.info(f"Starting SEC RAG Application on {host}:{port}")
-    app.run(host=host, port=port, debug=debug)
+    app.run(host='0.0.0.0', port=8000, debug=True)
