@@ -5,6 +5,9 @@ A Flask-based application for analyzing SEC 10-K filings using RAG (Retrieval Au
 """
 
 import os
+# Create logs directory immediately - MOST ROBUST SOLUTION
+os.makedirs('logs', exist_ok=True)
+
 import json
 import logging
 import requests
@@ -34,17 +37,7 @@ load_dotenv()
 USER_EMAIL = os.getenv('USER_EMAIL', 'your-email@example.com')
 PROJECT_NAME = os.getenv('PROJECT_NAME', 'Your project name')
 
-# Directories
-WORK_DIR = Path("work")
-UPLOADS_DIR = Path("uploads")
-INDEX_DIR = WORK_DIR / "index"
-LOGS_DIR = Path("logs")
-
-# Create directories FIRST
-for directory in [WORK_DIR, UPLOADS_DIR, INDEX_DIR, LOGS_DIR]:
-    directory.mkdir(exist_ok=True)
-
-# Configure logging AFTER directories are created
+# Configure logging (logs directory already created above)
 log_level = os.getenv('LOG_LEVEL', 'INFO')
 logging.basicConfig(
     level=getattr(logging, log_level),
@@ -64,11 +57,20 @@ if not OPENAI_API_KEY:
     logger.error("OPENAI_API_KEY environment variable is not set")
     raise ValueError("Please set the OPENAI_API_KEY environment variable")
 
+# Directories
+WORK_DIR = Path("work")
+UPLOADS_DIR = Path("uploads")
+INDEX_DIR = WORK_DIR / "index"
+LOGS_DIR = Path("logs")
+
+# Create directories
+for directory in [WORK_DIR, UPLOADS_DIR, INDEX_DIR, LOGS_DIR]:
+    directory.mkdir(exist_ok=True)
+
 # Configure LLM and embeddings
 Settings.llm = OpenAI(model="gpt-3.5-turbo", temperature=0.1, api_key=OPENAI_API_KEY)
 Settings.embed_model = OpenAIEmbedding(api_key=OPENAI_API_KEY)
 
-# Rest of your code remains the same...
 # Company ticker to CIK mapping (expand as needed)
 COMPANY_CIK_MAP = {
     'AAPL': '0000320193',
@@ -514,4 +516,3 @@ if __name__ == '__main__':
     
     logger.info(f"Starting SEC RAG Application on {host}:{port}")
     app.run(host=host, port=port, debug=debug)
-
