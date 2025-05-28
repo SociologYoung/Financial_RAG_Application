@@ -28,8 +28,11 @@ from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openai import OpenAI
 from dotenv import load_dotenv
 
+
 # Load environment variables
 load_dotenv()
+USER_EMAIL = os.getenv('USER_EMAIL', 'your-email@example.com')
+PROJECT_NAME = os.getenv('PROJECT_NAME', 'SEC RAG Application')
 
 # Configure logging
 log_level = os.getenv('LOG_LEVEL', 'INFO')
@@ -88,7 +91,7 @@ class SECDataExtractor:
     def __init__(self):
         self.session = requests.Session()
         self.session.headers.update({
-            'User-Agent': 'SEC RAG Application youremail.com',
+            'User-Agent': f'{PROJECT_NAME} {USER_EMAIL}',
             'Accept-Encoding': 'gzip, deflate',
             'Host': 'data.sec.gov'
         })
@@ -139,7 +142,7 @@ class SECDataExtractor:
         
         # Update headers for SEC website
         headers = {
-            'User-Agent': 'SEC RAG Application youremail.com',
+            'User-Agent':  f'{PROJECT_NAME} {USER_EMAIL}',
             'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
             'Accept-Language': 'en-US,en;q=0.5',
             'Accept-Encoding': 'gzip, deflate',
