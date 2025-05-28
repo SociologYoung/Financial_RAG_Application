@@ -32,7 +32,7 @@ A powerful Retrieval-Augmented Generation (RAG) application that automatically d
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/sec-finance-rag-assistant.git
+   git clone https://github.com/SociologYoung/Financial_RAG_Application.git
    cd sec-finance-rag-assistant
    ```
 
