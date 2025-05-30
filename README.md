@@ -1,26 +1,33 @@
 # SEC Finance RAG Assistant 🏦📊
 
-A powerful Retrieval-Augmented Generation (RAG) application that automatically downloads SEC 10-K filings and enables intelligent querying of financial data using AI.
+A powerful Retrieval-Augmented Generation (RAG) application that automatically downloads SEC 10-K filings and enables intelligent querying of financial data using AI. Built with Flask, LlamaIndex, and OpenAI GPT models.
 
 ![SEC Finance RAG Assistant](https://img.shields.io/badge/Python-3.8+-blue.svg)
 ![Flask](https://img.shields.io/badge/Flask-2.0+-green.svg)
 ![OpenAI](https://img.shields.io/badge/OpenAI-GPT--3.5-orange.svg)
 ![License](https://img.shields.io/badge/License-MIT-yellow.svg)
 
-## 🌟 Features
 
-- **Automatic SEC Filing Retrieval**: Enter a company ticker and automatically download the latest 10-K filing
-- **Intelligent Financial Data Extraction**: Advanced parsing to extract meaningful financial information from SEC documents
-- **AI-Powered Q&A**: Ask natural language questions about financial data and get detailed answers
-- **Vector Search**: Uses OpenAI embeddings for semantic search through financial documents
-- **Modern Web Interface**: Clean, responsive UI with real-time feedback
-- **Support for Major Companies**: Pre-configured for popular tickers (AAPL, MSFT, GOOGL, etc.)
+- **🔍 Automatic SEC Filing Retrieval**: Enter a company ticker symbol and automatically download the latest 10-K filing from SEC EDGAR database
+- **🧠 Intelligent Financial Data Extraction**: Advanced HTML parsing with BeautifulSoup to extract meaningful financial information from SEC documents  
+- **💬 AI-Powered Q&A**: Ask natural language questions about financial data and get detailed, contextual answers
+- **🔎 Vector Search**: Uses OpenAI embeddings and LlamaIndex for semantic search through financial documents
+- **🌐 Modern Web Interface**: Clean, responsive UI with real-time processing feedback
+- **🏢 Pre-configured Company Support**: Built-in CIK mappings for 10 major companies (AAPL, MSFT, GOOGL, etc.)
+- **📈 Financial Section Focus**: Specialized extraction of key financial sections including revenue, expenses, and risk factors
+- **💾 Persistent Vector Storage**: Maintains document embeddings across sessions for faster querying
 
 ## 🚀 Demo
 
 ![Demo Screenshot](demo_screenshot.png)
 
 *Ask questions like: "What was the total revenue?" or "What are the main risk factors?"*
+
+##Live Demo
+**Try it now!** 👉 [https://financerag-app-1070916754051.us-west1.run.app/](https://financerag-app-1070916754051.us-west1.run.app/)
+
+*No installation required - test the application directly in your browser!*
+
 
 ## 📋 Prerequisites
 
@@ -250,6 +257,15 @@ This project is licensed under the MIT License
 - [ ] Integration with financial databases
 - [ ] Advanced filtering and search options
 
+
+## 🌐 Deployment
+
+This application is deployed on Google Cloud Run. You can:
+- **Try the live demo**: [https://financerag-app-1070916754051.us-west1.run.app/](https://financerag-app-1070916754051.us-west1.run.app/)
+- **Deploy your own instance**: Use the source code from this repository to deploy to your preferred cloud platform
+- **Run locally**: Follow the installation instructions above for local development
+
 ---
 
-**⭐ If you find this project helpful, please consider giving it a star!**
+**⭐ If you find this project helpful, please consider giving it a star on GitHub!**
+
