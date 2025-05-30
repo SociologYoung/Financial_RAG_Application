@@ -257,14 +257,6 @@ This project is licensed under the MIT License
 - [ ] Integration with financial databases
 - [ ] Advanced filtering and search options
 
-
-## 🌐 Deployment
-
-This application is deployed on Google Cloud Run. You can:
-- **Try the live demo**: [https://financerag-app-1070916754051.us-west1.run.app/](https://financerag-app-1070916754051.us-west1.run.app/)
-- **Deploy your own instance**: Use the source code from this repository to deploy to your preferred cloud platform
-- **Run locally**: Follow the installation instructions above for local development
-
 ---
 
 **⭐ If you find this project helpful, please consider giving it a star on GitHub!**
